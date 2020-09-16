@@ -5,6 +5,7 @@ use crate::{
         Using, Values,
     },
     error::{Error, ErrorKind},
+    prelude::Average,
     visitor, Value,
 };
 use std::{convert::TryFrom, fmt::Write};
@@ -341,6 +342,21 @@ impl<'a> Visitor<'a> for Mssql<'a> {
                 self.delimited_identifiers(&[&*alias])?;
             };
         }
+
+        Ok(())
+    }
+
+    fn visit_average(&mut self, avg: Average<'a>) -> visitor::Result {
+        self.write("AVG")?;
+
+        self.surround_with("(", ")", |ref mut s| {
+            s.write("CONVERT")?;
+
+            s.surround_with("(", ")", |ref mut s| {
+                s.write("DECIMAL(32,16),")?;
+                s.visit_column(avg.column)
+            })
+        })?;
 
         Ok(())
     }
